@@ -3,12 +3,22 @@ const mysql = require('mysql2/promise');
 
 const app = express();
 
+// Permitir peticiones HTTP versión 1
+app.use((req, res, next) => {
+  req.httpVersion = '1.1';
+  req.httpVersionMajor = 1;
+  req.httpVersionMinor = 1;
+  next();
+});
 
 const pool = mysql.createPool({
   host: 'srv1075.hstgr.io',
   user: 'u945153519_mascotas',
   password: 'Eduar2532.',
   database: 'u945153519_mascotas',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
 app.use(express.json());
