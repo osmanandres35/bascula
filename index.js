@@ -9,10 +9,6 @@ const pool = mysql.createPool({
   user: 'u945153519_mascotas',
   password: 'Eduar2532.',
   database: 'u945153519_mascotas',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-  
 });
 
 app.use(express.json());
@@ -34,3 +30,7 @@ app.post('/api/agregarRegistro', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Servidor en ejecución en el puerto ${PORT}`);
+});
