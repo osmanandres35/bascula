@@ -1,36 +1,45 @@
-const express = require('express');
-const mysql = require('mysql2/promise');
+var mqtt = require("mqtt");
+const mysql = require('mysql2');
+var client = mqtt.connect("mqtt://test.mosquitto.org");
 
-const app = express();
-
-
-const pool = mysql.createPool({
+const dbConfig = {
   host: 'srv1075.hstgr.io',
   user: 'u945153519_mascotas',
   password: 'Eduar2532.',
-  database: 'u945153519_mascotas',
-});
+  database: 'u945153519_mascotas'
+};
 
-app.use(express.json());
+const pool = mysql.createPool(dbConfig);
 
-app.post('/api/agregarRegistro', async (req, res) => {
-  const { tipo, hora, peso, fecha, idb } = req.body;
+function EventoConectar() {
+  client.subscribe("ALSW2532/#", function (err) {
+    if (!err) {
+      client.publish("ALSW2532/Temperatura", "30");
+    }
+  });
+}
 
-  try {
-    const connection = await pool.getConnection();
-    const [rows] = await connection.execute(
-      'INSERT INTO bascula (tipo, hora, peso, fecha, idb) VALUES (?, ?, ?, ?, ?)',
-      [tipo, hora, peso, fecha, idb]
-    );
-    connection.release();
-    res.json({ success: true, message: 'Registro insertado con éxito' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al insertar el registro', error: error.message });
+function EventoMensaje(topic, message) {
+  if (topic == "ALSW2532/temp") {
+    console.log("La Temperatura es " + message.toString());
   }
-});
+  
+  
+  const [tipo, hora, peso, fecha, idb] = message.toString().split(',');
 
-const PORT = process.env.PORT || 3000;
+  const query = 'INSERT INTO bascula (tipo, hora, peso, fecha, idb) VALUES (?, ?, ?, ?, ?)';
+  pool.query(query, [tipo, hora, peso, fecha, idb], (error, results, fields) => {
+    if (error) {
+      console.error('Error al realizar la inserción en la base de datos:', error);
+    } else {
+      console.log('R_ok');
+    }
+  });
+}
 
-app.listen(PORT, () => {
-  console.log(`Servidor en ejecución en el puerto ${PORT}`);
+client.on("connect", EventoConectar);
+client.on("message", EventoMensaje);
+
+pool.on('error', (err) => {
+  console.error('Error de conexión a la base de datos:', err);
 });
